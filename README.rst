@@ -1,7 +1,7 @@
 .. image:: https://img.shields.io/badge/ittn--001-lsst.io-brightgreen.svg
    :target: https://ittn-001.lsst.io
-.. image:: https://travis-ci.org/LSST-IT/ittn-001.svg
-   :target: https://travis-ci.org/LSST-IT/ittn-001
+.. image:: https://travis-ci.com/LSST-IT/ittn-001.svg
+   :target: https://travis-ci.com/LSST-IT/ittn-001
 ..
   Uncomment this section and modify the DOI strings to include a Zenodo DOI badge in the README
   .. image:: https://zenodo.org/badge/doi/10.5281/zenodo.#####.svg
@@ -21,7 +21,7 @@ A summary of work performed and miscellaneous comments from the Puppeton Tucson 
 - Publication URL: https://ittn-001.lsst.io
 - Alternative editions: https://ittn-001.lsst.io/v
 - GitHub repository: https://github.com/LSST-IT/ittn-001
-- Build system: https://travis-ci.org/LSST-IT/ittn-001
+- Build system: https://travis-ci.com/LSST-IT/ittn-001
 
 
 Build this technical note
