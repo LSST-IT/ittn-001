@@ -261,8 +261,8 @@ We propose the following puppet code branching strategy:
 More details can be found at: `Puppet Development Workflow <https://confluence.lsstcorp.org/display/puppet/Puppet+Development+-+Workflow#/>`_
 
 
-Use the stdlib mod
-------------------
+Use stdlib
+----------
 
 There are several useful functions avaiable in `stdlib <https://forge.puppet.com/puppetlabs/stdlib>`_.  Using these functions may save development effort and improve code readability.
 
