@@ -9,8 +9,8 @@ digraph top {
     node [shape=ellipse fontsize=24 style=filled fillcolor=white]
     github [label="github"]
     smee [label="smee.io"]
-    smeeclient [label="smee-client"]
-    web [label="web"]
+    smeeclient [label="smee-client daemon"]
+    webhook [label="webhook daemon"]
     r10k [label="r10k"]
   }
 
@@ -27,12 +27,12 @@ digraph top {
       label="comcam-fp01"
 
       smeeclient
-      web
+      webhook
       r10k
       {
         rank=same
         smeeclient
-        web
+        webhook
       }
     }
   }
@@ -45,12 +45,12 @@ digraph top {
 
   edge [color=blue]
   github -> smee [label="   webhook payload"]
-  smeeclient -> web [label="   webhook payload"]
+  smeeclient -> webhook [label="   webhook payload"]
   smee -> smeeclient [label="   webhook payload"]
 
   edge [color=orange]
   smeeclient -> smee [label="   outbound connection to traverse nat"]
 
   edge [color=green]
-  web -> r10k [label="   spawn process"]
+  webhook -> r10k [label="   spawn process"]
 }
