@@ -17,6 +17,7 @@ doc_title: 'Redux Notes - Puppeton July, 2019'
 
 # Author names, ordered as a list. Each author name should be formatted as 'First Last'
 authors:
+  - 'Nicolas Singh Oteiza'
   - 'Joshua Hoblitt'
 
 # Current document revision date, YYYY-MM-DD
@@ -37,7 +38,7 @@ authors:
 copyright: '2019, Association of Universities for Research in Astronomy'
 
 # Description. A short, 1-2 sentence statemement used by document indices.
-description: 'A summary of work performed and miscellaneous comments from the Puppeton Tucson July 2019.'
+description: 'A summary of work performed and miscellaneous comments from the Puppeton July, 2019.'
 
 # Abstract, if available
 # abstract: >
