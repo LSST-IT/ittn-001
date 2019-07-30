@@ -1,6 +1,6 @@
 digraph top {
 //  dpi=100
-  ranksep=1.25
+  ranksep=0.5
   rankdir=TB
   overlap=false
   clusterrank=local
