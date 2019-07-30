@@ -29,7 +29,7 @@ We believe that there was general consensus during discussions at the start of t
 identified defects with existing structure
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- The structure is nested 6 levels deep, which is too complex for current needs. Eg., ``us/po/gs/po/puppet/gs-puppet-master.yaml``
+- The structure is nested 6 levels deep, which is too complex for current needs. E.g., ``us/po/gs/po/puppet/gs-puppet-master.yaml``
 - It contains plain text secrets.
 - ``%{networking.hostname}.yaml`` and ``%{cluster}.yaml`` match at the same level!
 - With the exception of `type`, there are no 'parent' directories to aid an editing engineer in navigating the path structure.
@@ -97,11 +97,11 @@ General usage guidelines
 - The emphasis should be on configuration by role.
 - Data should be only present when it will actually be used.  As an example, it is possible to configure most role data, where it does not conflict, in ``common.yaml``. While keys are unmatched are harmlessly ignored, this tends to obscure which data is **actually being used**.
 - Role data should be added at the **least** specific layer possible that does not cause said data to become visible to an unrelated role. TL;DR - start at ``role`` unless it is globally needed data.
-- The ``role``, ``site``, and ``cluster`` names need to be globally unique. Eg., there **may not** be a cluster named ``foo`` at different sites with different functions.
+- The ``role``, ``site``, and ``cluster`` names need to be globally unique. E.g., there **may not** be a cluster named ``foo`` at different sites with different functions.
 - Data should be aggressively curated and removed if not actively used.
 - The hierarchy should be considered more of a logical construct rather than a physical representation.  For example, ``site`` need not be a literal physical locale but could represent any high level logical grouping of hosts.
 - Ideally, ``node`` should never be used.
-- Do not add layers in advance of usage. I.e.., differ complexity until it is needed
+- Do not add layers in advance of usage. I.e., differ complexity until it is needed
 - Do not consider the hierarchy as rigid -- refactor as warranted
 
 Decouple node FQDN from hierarchy layers
@@ -222,7 +222,7 @@ class.
 TODO
 ----
 
-- confirm with Tiago & Chile Team which hierarchies/profiles are unused (e.g. EFD)
+- confirm with Tiago & Chile Team which hierarchies/profiles are unused (E.g. EFD)
 - Check if EFD, ATS or CCS definitions are being used. This will eventually remove ``datacenter`` hierarchy.
 - Remove ``type`` hierarchies, blocked as the moment by telegraf definitions.
 - **Secrets management**
@@ -234,7 +234,7 @@ Roles & Profiles Refactoring
 Pin module versions to Puppetfile
 ---------------------------------
 
-Puppet modules **must** be pinned to a specific version number (`reference <https://github.com/LSST-IT/lsst-itconf/blob/c1f095db2d63fac5e6a7f62ff07bed054c12f031/Puppetfile>`_), in order to avoid unpredictable dependency resolution & upgrade issues during the lifetime of puppet agents.  Due to the usage of ``r10k``, a specific version string must be used instead of a version constraint expression.  Eg., use ``1.1.1`` instead of ``~> 1.1.0``
+Puppet modules **must** be pinned to a specific version number (`reference <https://github.com/LSST-IT/lsst-itconf/blob/c1f095db2d63fac5e6a7f62ff07bed054c12f031/Puppetfile>`_), in order to avoid unpredictable dependency resolution & upgrade issues during the lifetime of puppet agents.  Due to the usage of ``r10k``, a specific version string must be used instead of a version constraint expression.  E.g., use ``1.1.1`` instead of ``~> 1.1.0``
 
 .. code-block:: ruby
 
@@ -437,7 +437,7 @@ Puppet code
 
 We propose that the `puppetlabs style guide <https://puppet.com/docs/puppet/6.7/style_guide.html>`_ be adopted for puppet code.
 
-Note that class names are not fully qualified. Eg., ``foo::bar`` is now preferred over ``::foo::bar``.
+Note that class names are not fully qualified. E.g., ``foo::bar`` is now preferred over ``::foo::bar``.
 
 YAML markup
 ^^^^^^^^^^^
@@ -447,7 +447,7 @@ YAML markup
 - No space between key name and ``:``
 - Lists and maps/hashes/dicts/associative arrays use the intended multi-line form
 - Role names use ``_`` instead of ``-``
-- Avoid useless headers/comments as stale/excessive comments are often worse than no-comment. Eg., It is not necessary to explain that ``role/foo.yaml`` is the ``foo`` role.
+- Avoid useless headers/comments as stale/excessive comments are often worse than no-comment. E.g., It is not necessary to explain that ``role/foo.yaml`` is the ``foo`` role.
 - Boolean values are `true` and `false` (lowercase only)
 - ``site``, ``role``, and ``cluster`` names must be unique
 - Break comment lines at 80cols
