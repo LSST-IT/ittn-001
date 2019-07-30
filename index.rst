@@ -466,10 +466,19 @@ Clients setup
 r10k "gitops"
 -------------
 
+We feel that it is important to automate the deploy of hiera/code changes for several reasons:
+
+- Pushing changes is repetive work that disrupts a development workflow
+- Updating the code is surpringly prone to human error -- I think I pushed it...
+- It ensures that the git repo is the true "source of truth" rather than the state of files on disk as of whenever they were last updated.
+
 .. figure:: /_static/foreman_smee.png
    :name: fig-foreman-smee
    :alt: foreman smee webhook graph
 
+Our proof of concept implimentation uses github webhooks on the ``lsst-it/lsst-itconf`` and ``lsst-it/lsst-puppet-hiera*`` repos that push to `smee.io <https://smee.io>`_.  A simple `smee-client <>`_ daemon is running on the foreman host.  ``smee-client`` open a persistent outbound connection to ``smee.io`` and thus is able to traverse nat and stateful firewalls.  ``smee-client`` receives push notifications of the webhook payload, which is then passed onto the ``webhook`` service that is bundled with the `puppet/r10k <https://forge.puppet.com/puppet/r10k>`_ module.  The webhook service parses the ``branch`` name out of the payload and triggers ``r10k`` to update only that branch (regaurdless of the source repo name).
+
+In addition, ``r10k`` is triggered from cron to update all environments every 30 minutes to prevent desyncrization if the ``smee-client`` outbound connect is broken, or a notification is lost.
 
 Misc frustrations
 -----------------
@@ -477,8 +486,8 @@ Misc frustrations
 - DNS
 - no central auth
 
-TO DOs
-------
+TODO
+----
 
 - doc or puppetize foreman install/bootstrap
 - develop hammer (cli) or psql scripts to allow boot strapping a foreman install without requiring manual configuration
