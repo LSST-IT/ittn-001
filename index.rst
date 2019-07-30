@@ -349,10 +349,10 @@ Be aware that **all** puppet functions are parse order dependent
 
 There are many examples of ``defined()`` being used. However, it is critical to be aware that all duplicate declarations of a resources must be similarly protected. Otherwise, catalog compilation may fail when the parse order changes.  `ensure_resources <https://forge.puppet.com/puppetlabs/stdlib#ensure_resources>`_ from stdlib should be preferred.
 
-Profiles should have conditional logic based on the hostname
-------------------------------------------------------------
+Profiles **should not** use conditional logic based on the hostname
+-------------------------------------------------------------------
 
-`Negative Example 1 <https://github.com/LSST-IT/lsst-itconf/blob/59dde8ae0113089c475ae4987b9226b3a059b920/site/profile/manifests/it/ssh_server.pp#L10-L23>`
+`Negative Example 1 <https://github.com/LSST-IT/lsst-itconf/blob/59dde8ae0113089c475ae4987b9226b3a059b920/site/profile/manifests/it/ssh_server.pp#L10-L23>`_:
 
 .. code-block:: puppet
 
@@ -371,7 +371,7 @@ Profiles should have conditional logic based on the hostname
     }
  }
 
-`Negative Example 2 <https://github.com/LSST-IT/lsst-itconf/blob/59dde8ae0113089c475ae4987b9226b3a059b920/site/profile/manifests/ts/efd/ts_efd.pp#L4-L14>`
+`Negative Example 2 <https://github.com/LSST-IT/lsst-itconf/blob/59dde8ae0113089c475ae4987b9226b3a059b920/site/profile/manifests/ts/efd/ts_efd.pp#L4-L14>`_:
 
 .. code-block:: puppet
 
