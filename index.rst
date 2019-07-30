@@ -466,7 +466,7 @@ Clients setup
 r10k "gitops"
 -------------
 
-.. figure:: /_static/foreman-smee.png
+.. figure:: /_static/foreman_smee.png
    :name: fig-foreman-smee
    :alt: foreman smee webhook graph
 
