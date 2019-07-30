@@ -456,12 +456,24 @@ Foreman installation
 - smee webhook integration to automate r10k
 - kickstart scripts customization
 
-Clients setup
--------------
+Client setup
+------------
 
-.. TODO JCH could you help me to explain this section?
-- iDrac setup
-- PXE boot
+- basic BIOS/UEFI setup
+   - power on after powerloss
+   - no halt on error
+   - PXE boot
+   - record iDRAC BMC IP
+   - record iDRAC password printed on chassis pull out card
+   - (note that this entire process could be skipped if the BMC was given a static IP assignment via DHCP by recording the mac address from the packaging)
+- iDRAC setup
+   - access over https
+   - collect MAC addresses of BMC and PXE interfaces
+   - trigger a PXE boot
+
+.. figure:: /_static/idrac-screenshot.png
+   :name: fig-idrac-screenshot
+   :alt: screenshot of dell iDRAC www interface
 
 r10k "gitops"
 -------------
