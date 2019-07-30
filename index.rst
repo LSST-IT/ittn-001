@@ -497,6 +497,30 @@ Foreman installation
 - smee webhook integration to automate r10k
 - kickstart scripts customization
 
+``foreman-installer`` flags
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: puppet
+
+  foreman-installer \
+    --enable-foreman-proxy \
+    --foreman-proxy-tftp=true \
+    --foreman-proxy-tftp-servername=10.0.103.101 \
+    --foreman-proxy-dhcp=true \
+    --foreman-proxy-dhcp-interface=em1 \
+    --foreman-proxy-dhcp-gateway=10.0.103.1 \
+    --foreman-proxy-dhcp-nameservers="10.0.103.101" \
+    --foreman-proxy-dhcp-range="10.0.103.101 10.0.103.105" \
+    --foreman-proxy-dns=true \
+    --foreman-proxy-dns-interface=em1 \
+    --foreman-proxy-dns-zone=test \
+    --foreman-proxy-dns-reverse=103.0.10.in-addr.arpa \
+    --foreman-proxy-dns-forwarders=140.252.32.21 \
+    --foreman-proxy-foreman-base-url=https://comcam-fp01.test \
+    --enable-foreman-plugin-remote-execution \
+    --enable-foreman-proxy-plugin-remote-execution-ssh
+
+
 Client setup
 ------------
 
