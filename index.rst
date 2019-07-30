@@ -360,7 +360,7 @@ A few TravisCI jobs have been added to Hiera repos, to run code quality checks:
 
 ``lsst-puppet-hiera`` and ``lsst-puppet-hiera-private`` CI jobs statuses are exposed with a badge, at the beginning of each README file.
 
-.. figure:: /_static/travis-badge.png
+.. figure:: /_static/travis-badge.svg
 
    :name: fig-travis-badge
    :alt: TravisCI Status Badge
