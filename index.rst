@@ -4,8 +4,8 @@
 
 .. sectnum::
 
-Hiera / Roles & Profiles Refactoring
-====================================
+Hiera Refactoring
+=================
 
 New Hierarchy
 -------------
@@ -186,35 +186,6 @@ Both repos have the same Hiera hierarchy (described above), but the private repo
 
 *This is intended to be a transitional step towards completely removing inline secrets from hiera.  The intent is that the ``-private`` repo will be removed and only a single public repo used for hiera data, once appropriate secret management infrastructure is in place.*
 
-Pin module versions to Puppetfile
----------------------------------
-
-Puppet modules **must** be pinned to a specific version number (`reference <https://github.com/LSST-IT/lsst-itconf/blob/c1f095db2d63fac5e6a7f62ff07bed054c12f031/Puppetfile>`_), in order to avoid unpredictable dependency resolution & upgrade issues during the lifetime of puppet agents.  Due to the usage of ``r10k``, a specific version string must be used instead of a version constrant expression.  Eg., use ``1.1.1`` instead of ``~> 1.1.0``
-
-.. code-block:: ruby
-
-  forge 'https://forgeapi.puppetlabs.com'
-
-  mod 'aboe/chrony', '0.2.5'
-  mod 'crayfishx/firewalld', '3.4.0'
-  mod 'elastic/elasticsearch', '6.3.3'
-  mod 'elastic/elastic_stack', '6.3.1'
-  mod 'ghoneycutt/ssh', '3.61.0'
-  ...
-
-Please note that in the name of consistency, all modules are named using slash (``/``) as a namespace seperator instead of underscore (``_``).
-
-Git Flow on new Repos
----------------------
-
-We propose the following puppet code branching strategy:
-
-- ``master`` branch is the baseline & latest version of our code, but will not be used for deployments.
-- ``<jira-ticket-id>/<short-description>`` topic branches will include the work for each feature, which are based from ``master`` and pushed into ``master`` via PR.
-- ``production`` branch includes existing nodes deployed versions, using *git tags*.
-
-More details can be found at: `Puppet Development Workflow <https://confluence.lsstcorp.org/display/puppet/Puppet+Development+-+Workflow#/>`_
-
 Roles are defined via hiera
 ---------------------------
 
@@ -247,6 +218,48 @@ class.
 
   ---
   timezone::timezone: "UTC"
+
+TODO
+----
+
+- confirm with Tiago & Chile Team which hierarchies/profiles are unused (e.g. EFD)
+- Check if EFD, ATS or CCS definitions are being used. This will eventually remove ``datacenter`` hierarchy.
+- Remove ``type`` hierarchies, blocked as the moment by telegraf definitions.
+- **Secrets management**
+
+
+Roles & Profiles Refactoring
+============================
+
+Pin module versions to Puppetfile
+---------------------------------
+
+Puppet modules **must** be pinned to a specific version number (`reference <https://github.com/LSST-IT/lsst-itconf/blob/c1f095db2d63fac5e6a7f62ff07bed054c12f031/Puppetfile>`_), in order to avoid unpredictable dependency resolution & upgrade issues during the lifetime of puppet agents.  Due to the usage of ``r10k``, a specific version string must be used instead of a version constrant expression.  Eg., use ``1.1.1`` instead of ``~> 1.1.0``
+
+.. code-block:: ruby
+
+  forge 'https://forgeapi.puppetlabs.com'
+
+  mod 'aboe/chrony', '0.2.5'
+  mod 'crayfishx/firewalld', '3.4.0'
+  mod 'elastic/elasticsearch', '6.3.3'
+  mod 'elastic/elastic_stack', '6.3.1'
+  mod 'ghoneycutt/ssh', '3.61.0'
+  ...
+
+Please note that in the name of consistency, all modules are named using slash (``/``) as a namespace seperator instead of underscore (``_``).
+
+Git Flow on new Repos
+---------------------
+
+We propose the following puppet code branching strategy:
+
+- ``master`` branch is the baseline & latest version of our code, but will not be used for deployments.
+- ``<jira-ticket-id>/<short-description>`` topic branches will include the work for each feature, which are based from ``master`` and pushed into ``master`` via PR.
+- ``production`` branch includes existing nodes deployed versions, using *git tags*.
+
+More details can be found at: `Puppet Development Workflow <https://confluence.lsstcorp.org/display/puppet/Puppet+Development+-+Workflow#/>`_
+
 
 Use the stdlib mod
 ------------------
@@ -410,9 +423,9 @@ Puppetfile
 TODO
 ----
 
-- TODO confirm with Tiago & Chile Team which hierarchies/profiles are unused (e.g. EFD)
-- Check if EFD, ATS or CCS definitions are being used. This will eventually remove ``datacenter`` hierarchy.
-- Remove ``type`` hierarchies, blocked as the moment by telegraf definitions.
+- Remove remaining role classes
+- Refactor all profiles classes
+
 
 Comcam Servers Setup
 ====================
@@ -443,8 +456,8 @@ Foreman installation
 - smee webhook integration to automate r10k
 - kickstart scripts customization
 
-Clients set up
---------------
+Clients setup
+-------------
 
 .. TODO JCH could you help me to explain this section?
 - iDrac setup
