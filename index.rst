@@ -1,57 +1,439 @@
-..
-  Technote content.
-
-  See https://developer.lsst.io/restructuredtext/style.html
-  for a guide to reStructuredText writing.
-
-  Do not put the title, authors or other metadata in this document;
-  those are automatically added.
-
-  Use the following syntax for sections:
-
-  Sections
-  ========
-
-  and
-
-  Subsections
-  -----------
-
-  and
-
-  Subsubsections
-  ^^^^^^^^^^^^^^
-
-  To add images, add the image file (png, svg or jpeg preferred) to the
-  _static/ directory. The reST syntax for adding the image is
-
-  .. figure:: /_static/filename.ext
-     :name: fig-label
-
-     Caption text.
-
-   Run: ``make html`` and ``open _build/html/index.html`` to preview your work.
-   See the README at https://github.com/lsst-sqre/lsst-technote-bootstrap or
-   this repo's README for more info.
-
-   Feel free to delete this instructional comment.
-
 :tocdepth: 1
 
 .. Please do not modify tocdepth; will be fixed when a new Sphinx theme is shipped.
 
 .. sectnum::
 
-.. TODO: Delete the note below before merging new content to the master branch.
+Hiera / Roles & Profiles Refactoring
+====================================
 
-.. note::
+New Hiera Hierarchy
+-------------------
 
-   **This technote is not yet published.**
+We believe that there was general consensus during discussions at the start of the puppeton that the `current <https://github.com/LSST-IT/lsst-itconf/blob/ec3296fcd0d7ce91f13e9ea1993190719a66d699/hiera.yaml>`_ hierarchy was difficult to use and in need of refactoring.
 
-   A summary of work performed and miscellaneous comments from the Puppeton Tucson July 2019.
+.. code-block:: yaml
+  :linenos:
+  :emphasize-lines: 1-6
 
-.. Add content here.
-.. Do not include the document title (it's automatically added from metadata.yaml).
+  - "%{country}/%{site}/%{enclave}/%{datacenter}/%{cluster}/%{networking.hostname}.yaml"
+  - "%{country}/%{site}/%{enclave}/%{datacenter}/%{cluster}/%{cluster}.yaml"
+  - "%{country}/%{site}/%{enclave}/%{datacenter}/%{datacenter}.yaml"
+  - "%{country}/%{site}/%{enclave}/%{enclave}.yaml"
+  - "%{country}/%{site}/%{site}.yaml"
+  - "%{country}/%{country}.yaml"
+  - "type/%{virtual}.yaml"
+  - "type/default.yaml"
+  - "common.yaml"
+
+identified defects with existing structure
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- The structure is nested 6 levels deep, which is too complex for current needs. Eg., ``us/po/gs/po/puppet/gs-puppet-master.yaml``
+- It contains plain text secrets.
+- ``%{networking.hostname}.yaml`` and ``%{cluster}.yaml`` match at the same level!
+- With the exception of `type`, there are no 'parent' directories to aid an editing engineer in navigating the path structure.
+- There are no layers matching a ``role``, which does not mesh well with the well known `roles and profiles pattern <https://www.craigdunn.org/2012/05/239/>`_ pattern, this is intended to be ``role`` centric.
+- Almost all hiera keys are not namespaced (``foo::<key>``) and manually retrived from puppet code using ``lookup()``.  This makes it difficult to determine which, if any, profile class is using that data.
+
+revised hierarchy
+^^^^^^^^^^^^^^^^^
+
+In an effort to simplify overall Hiera usage, we worked on migrating to this revised `new <https://github.com/LSST-IT/lsst-itconf/blob/f1bc67d46679db44d74f4f1eb92e78bf7bd751fa/hiera.yaml>`_ hierarchy:
+
+.. code-block:: yaml
+  :linenos:
+  - "node/%{fqdn}.yaml"
+  - "site/%{site}/cluster/%{cluster}/role/%{role}.yaml"
+  - "site/%{site}/cluster/%{cluster}.yaml"
+  - "cluster/%{cluster}/role/%{role}.yaml"
+  - "cluster/%{cluster}.yaml"
+  - "site/%{site}/role/%{role}.yaml"
+  - "site/%{site}.yaml"
+  - "role/%{role}.yaml"
+  - "role/%{role}/type/%{virtual}.yaml"
+  - "type/%{virtual}.yaml"
+  - "type/default.yaml"
+  - "common.yaml"
+
+As the result of some inputs & agreements:
+
+- ``country`` and ``enclave`` are not necessary, since we are already classifying locations using ``site``.
+- Most of the current definitions seem to be role-specific, instead of node-specific.
+- Data lookups - by default - will search the hierarchy in the order defined and return the first value found. Thus, the order is always specified from most specific to least specific.
+- ``type`` was added to facilitate refactoring the existing hierarchy but the name feels awkward and should be revisited.
+
+General usage guidelines
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+- The emphasis should be on configuration by role.
+- Data should be only present when it will actually be used.  As an example, it is possible to configure most role data, where it does not conflict, in ``common.yaml``. While keys are umatched are harmlessly ignored, this tends to obscure which data is **actually being used**.
+- Role data should be added at the **least** specific layer possible that does not cause said data to become visible to an unrelated role. TL;DR - start at ``role`` unless it is globally needed data.
+- The ``role``, ``site``, and ``cluster`` names need to be globally unique. Eg., there **may not** be a cluster named ``foo`` at different sites with different functions.
+- Data should be aggressively curated and removed if not actively used.
+- The hierarchy should be considered more of a logical construct rather than a physical representation.  For example, ``site`` need not be a literal physical locale but could represent any high level logical grouping of hosts.
+- Ideally, ``node`` should never be used.
+- Do not add layers in advance of usage. Ie., differ complexity until it is needed
+- Do not consider the hierarchy as rigid -- refactor as warranted
+
+Decouple node FQDN from hierarchy layers
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The current hierarchy is dependent upon facts generated by `parsing the node's FQDN<https://github.com/LSST-IT/lsst-itconf/blob/210094e9e421528337732a728bd4a71f4fe602ec/site/facts/facts.d/lsst_facts.py>`_.
+
+.. code-block:: ruby
+  :linenos:
+  if len(hostname_list) >= 3:
+     data["enclave"] = hostname_list[2]
+
+There are two issues with this approach that cause us to recommend rejecting it.
+
+- It causes the hierarchy to be tightly coupled with the host name.  A consequence of that relationship is that even minor refactoring of the hierarchy may require changing hostnames.  This is particularly incovinent without an automated means of re-provisioning hosts.
+- There is the risk that the host, either malicously or by accident, returns facts that classify it with the incorrect role. We find that it is preferrable to assign most critial hierarchymatching facts via ENC.
+
+Viva la ENC
+^^^^^^^^^^^
+
+The existing custom ENC and associated "database repos":
+
+- https://github.com/LSST-IT/puppet-enc
+- https://github.com/LSST-IT/cl_puppet_nodes_database
+- https://github.com/LSST-IT/lsst-sandbox-nodes-database
+- https://github.com/LSST-IT/ccs_puppet_nodes_database
+
+essentially provides a mapping between a hostname matching regex and a puppet role class.  Although the ENC appears to have been deployed in La Serena and the "sandbox", it was never functioning in Tucson (``po``). We created a database for ``po`` by copying the one for ``ls``, added the nessicary hiera configuration, and fixed some minor profile problems in order to test the ENC in a sandbox environment.  Ultimately, we found the custom ENC both overly complex to configure and too rigid to support the injection of additional facts without refactoring.  This does not seem worth while considering the limited functionality.
+
+For initial testing, we replaced the custom ENV with a primitive shell script.
+
+.. code-block:: bash
+  #!/bin/bash
+
+  cat <<END
+  ---
+  classes:
+  - role::it::graylog
+  environment: IT_1141_hiera_redux
+  parameters:
+    cluster: gs
+    datacenter: po
+    site: po
+    role: graylog
+  END
+
+and then switched to using custom facts as an interium solution onto the transition to new ENC is made.
+
+.. code-block:: bash
+  mkdir -p /etc/facter/facts.d
+  cat > /etc/facter/facts.d/role.txt <<END
+  role=graylog
+  site=po
+  END
+
+We recommend adopting `TheForeman <https://theforeman.org/>`_ as a production ENC.
+
+Secrets Management
+------------------
+
+The majority of data should be maintained in a single, shared Hiera repo that is available to everyone that wants to see, use or modify puppet modules. However, some data, primarily OS level configuration such as private SSH keys, is inappropriate for public consumption.
+
+For that reason, we decided to host sensitive data in a **private** repo called `lsst-puppet-hiera-private <https://github.com/LSST-IT/lsst-puppet-hiera-private>`_, which is not public and is configured to be read by R10K alongside `lsst-puppet-hiera <https://github.com/LSST-IT/lsst-puppet-hiera>`_:
+
+.. code-block:: yaml
+
+  cachedir: "/var/cache/r10k"
+  sources:
+    control:
+      remote: "https://github.com/lsst-it/lsst-itconf"
+      basedir: "/etc/puppetlabs/code/environments"
+    lsst_hiera_private:
+      remote: "git@github.com:lsst-it/lsst-puppet-hiera-private.git"
+      basedir: "/etc/puppetlabs/code/hieradata/private"
+    lsst_hiera_public:
+      remote: "https://github.com/lsst-it/lsst-puppet-hiera.git"
+      basedir: "/etc/puppetlabs/code/hieradata/public"
+
+Both repos have the same Hiera hierarchy (described above), but the private repo must be given priority so that public Hiera can't override a private setting.
+
+*This is intended to be a transitional step towards completely removing inline secrets from hiera.  The intent is that the ``-private`` repo will be removed and only a single public repo used for hiera data, once appropriate secret management infrastructure is in place.*
+
+Pin module versions to Puppetfile
+---------------------------------
+
+Puppet modules **must** be pinned to a specific version number (`reference <https://github.com/LSST-IT/lsst-itconf/blob/c1f095db2d63fac5e6a7f62ff07bed054c12f031/Puppetfile>`_), in order to avoid unpredictable dependency resolution & upgrade issues during the lifetime of puppet agents.  Due to the usage of ``r10k``, a specific version string must be used instead of a version constrant expression.  Eg., use ``1.1.1`` instead of ``~> 1.1.0``
+
+.. code-block:: ruby
+
+  forge 'https://forgeapi.puppetlabs.com'
+
+  mod 'aboe/chrony', '0.2.5'
+  mod 'crayfishx/firewalld', '3.4.0'
+  mod 'elastic/elasticsearch', '6.3.3'
+  mod 'elastic/elastic_stack', '6.3.1'
+  mod 'ghoneycutt/ssh', '3.61.0'
+  ...
+
+Please note that in the name of consistency, all modules are named using slash (``/``) as a namespace seperator instead of underscore (``_``).
+
+Git Flow on new Repos
+---------------------
+
+We propose the following puppet code branching strategy:
+
+- ``master`` branch is the baseline & latest version of our code, but will not be used for deployments.
+- ``<jira-ticket-id>/<short-description>`` topic branches will include the work for each feature, which are based from ``master`` and pushed into ``master`` via PR.
+- ``production`` branch includes existing nodes deployed versions, using *git tags*.
+
+More details can be found at: `Puppet Development Workflow <https://confluence.lsstcorp.org/display/puppet/Puppet+Development+-+Workflow#/>`_
+
+Roles are defined via hiera
+---------------------------
+
+Role classes, eg., ``role::foo::bar``, **should not** be present in the control repo.  Instead, the 'role' should be defined by a list of class to be included in hiera.
+
+Example of direct class inclusion from hiera role layer (``role/bar.yaml``):
+
+.. code-block:: yaml
+  ---
+  classes:
+    - "profile::default"
+    - "profile::foo::bar"
+
+As a ``role`` class should only ever be composed of ``include`` statements, this removes boilerplate and reduces the minimum number of files related to a role.  It also is intended to shift the focus on configuration/composition into the hiera repo.
+
+For the immediate future, profile classes should continue to be used, and **only** profile classes should be directly included via hiera.  This restriction is intended to avoid developer confusion.
+
+Use automatic class parameter lookup
+------------------------------------
+
+- ``lookup()`` should only be used in **exception circumstances**; the implimentation of magic or an extreme case where data can't easily be deduplicated by with hiera layers.
+- Typically, data should 'flow' from hiera to profile classes via parameters
+- Configuration data for non-profile classes should generally **not be** passed through a profile and configured in code but instead be set directly in hiera.
+
+As an example, the name of the tz would be set directly on the ``timezone``
+class.
+
+.. code-block:: yaml
+  ---
+  timezone::timezone: "UTC"
+
+Use the stdlib mod
+------------------
+
+There are several useful functions avaiable in `stdlib <https://forge.puppet.com/puppetlabs/stdlib>`_.  Using these functions may save development effort and improve code readability.
+
+Consider this `example<https://github.com/LSST-IT/lsst-itconf/blob/cb90979d588a7ef8c6c2b9c18314a96bd84d043f/site/profile/manifests/it/puppet_master.pp#L226-L244>`_ from the ``profile::it::puppet_master`` class:
+
+.. code-block:: puppet
+  if $hiera_id_rsa_path and $hiera_id_rsa_path =~ /(.*\/)(.*\id_rsa)/ {
+     $base_path = $1
+     $dir = split($base_path, '/')
+     $filename = $2
+
+     $aux_dir = ['']
+     $dir.each | $index, $sub_dir | {
+
+       if join( $dir[ 1,$index] , '/' ) == '' {
+           $aux_dir = '/'
+       }else{
+           $aux_dir = join( $aux_dir + $dir[1, $index] , '/')
+       }
+       if ! defined(File[$aux_dir]) {
+         file{ $aux_dir:
+           ensure => directory,
+         }
+       }
+     }
+  ...
+
+which may essentially be replaced with the `basename <https://forge.puppet.com/puppetlabs/stdlib#basename>`_ and `ensure_resources <https://forge.puppet.com/puppetlabs/stdlib#ensure_resources>`_ functions.
+
+.. code-block:: puppet
+  # untested
+  if $hiera_id_rsa_path {
+    ensure_resources('file', {
+      basename($hiera_id_rsa_path) => {
+        ensure => 'directory',
+      },
+    })
+
+Be aware of type autorequire
+----------------------------
+
+The existing roles and profiles contain many examples of ``file`` resources using the ``require`` meta-parameter to introduce a dependency upon the parent directory.
+
+Consider this `example <https://github.com/LSST-IT/lsst-itconf/blob/cb90979d588a7ef8c6c2b9c18314a96bd84d043f/site/profile/manifests/it/puppet_master.pp#L189-L192>`_:
+
+.. code-block:: puppet
+  file{ '/root/.ssh/known_hosts':
+    ensure  => present,
+    require => File['/root/.ssh/']
+  }
+
+this code is equivalent:
+
+.. code-block:: puppet
+  file{ '/root/.ssh/known_hosts':
+    ensure  => present,
+  }
+
+as the ``file`` type will `autorequire <https://puppet.com/docs/puppet/6.7/types/file.html#file-description>`_ the `parent directory <https://github.com/puppetlabs/puppet/blob/6c257fc7827989c2af2901f974666f0f23611153/lib/puppet/type/file.rb#L357-L389>`_ along with resources for the ``user`` and ``group``.
+
+declare data type of class parameters
+-------------------------------------
+
+The data type of every profile class parameter must be declared.  This functions as a sanity check against hiera data type errors.
+
+.. code-block:: puppet
+  class profile::foo(
+    Variant[Hash[String, String], Undef] $bar = undef,
+  ) {
+
+Make heavy usage of the forge
+-----------------------------
+
+Check the forge before writing a new module or a profile that is anything but a list of direct inclusions.
+
+As an example, prefer:
+
+.. code-block:: puppet
+   include timezone
+
+`Instead of<https://github.com/LSST-IT/lsst-itconf/blob/8d2b2fe9279dacb6914881859b933d40506ce949/site/profile/manifests/default.pp#L152-L158>`_:
+
+.. code-block:: puppet
+  exec { 'set-timezone':
+    provider => 'shell',
+    command  => '/bin/timedatectl set-timezone UTC',
+    returns  => [0],
+    onlyif   => "test -z \"$(ls -l /etc/localtime | grep -o UTC)\""
+  }
+
+As a general rule, it should not be necessary to use ``exec`` to manage base os resources.  Check the forge for a suitable module before resorting to ``exec`` resources.
+
+CI Checks
+---------
+
+A few TravisCI jobs have been added to Hiera repos, to run code quality checks:
+
+- **Yamllint**: checks the validity of each yaml file in the repo, against rules like indentation, quotes or comments. Sample yamllint rules can be found in `here <https://github.com/LSST-IT/lsst-puppet-hiera/blob/893451a96f975c21eed06eb206a07a2b07af317a/.yamllint.yaml>`_, and sample CI job configurations for yamllint can be found in `here <https://github.com/LSST-IT/lsst-puppet-hiera/blob/893451a96f975c21eed06eb206a07a2b07af317a/.travis.yml#L8>`_.
+- **Markdownlint**: checks the validity of each markdown file in the repo, again rules like line length, unused lines or inline HTML. Sample markdownlint rules can be found in `here <https://github.com/LSST-IT/lsst-puppet-hiera/blob/893451a96f975c21eed06eb206a07a2b07af317a/.mdl_style.rb>`_, and sample CI job configurations for markdownlint can be found in `here <https://github.com/LSST-IT/lsst-puppet-hiera/blob/893451a96f975c21eed06eb206a07a2b07af317a/.travis.yml#L13>`_.
+
+``lsst-puppet-hiera`` and ``lsst-puppet-hiera-private`` CI jobs statuses are exposed with a badge, at the beginning of each README file.
+
+.. figure:: /_static/travis-badge.png
+   :name: fig-travis-badge
+   :alt: TravisCI Status Badge
+   :scale: 40 %
+
+The control repo includes the above travis checks but adds sanity checks from several puppet and ruby linting tools.
+
+See the `.travis.yaml <https://github.com/LSST-IT/lsst-itconf/blob/develop/.travis.yml#L19>`_ for details.
+
+Tested setups
+-------------
+
+The new Hiera hierachy (composed by two repos) has been tested in the following hosts, after setting up their facts manually in ``facts.d`` folder:
+
+======================= ===================== ==============
+Hostname                Service               Puppet Profile
+======================= ===================== ==============
+``gs-puppet-master``    Puppet Master Tucscon `puppet_master.pp <https://github.com/LSST-IT/lsst-itconf/blob/d51cc1a4566f2aa7808c3ecaf7f6aefba0dc4fb0/site/profile/manifests/it/puppet_master.pp>`_
+``gs-grafana-node-01``  Grafana               `grafana.pp <https://github.com/LSST-IT/lsst-itconf/blob/d51cc1a4566f2aa7808c3ecaf7f6aefba0dc4fb0/site/profile/manifests/it/grafana.pp>`_
+``gs-graylog-node-01``  Graylog               `graylog.pp <https://github.com/LSST-IT/lsst-itconf/blob/d51cc1a4566f2aa7808c3ecaf7f6aefba0dc4fb0/site/profile/manifests/it/graylog.pp>`_
+``gs-influxdb-node-01`` InfluxDB              `influxdb.pp <https://github.com/LSST-IT/lsst-itconf/blob/d51cc1a4566f2aa7808c3ecaf7f6aefba0dc4fb0/site/profile/manifests/it/influxdb.pp>`_
+``ats-shutter-hcu``     ats header service?   Not modified per @mareuter
+======================= ===================== ==============
+
+Style Guide(s)
+--------------
+
+Puppet code
+^^^^^^^^^^^
+
+We propose that the `puppetlabs style guide <https://puppet.com/docs/puppet/6.7/style_guide.html>`_ be adopted for puppet code.
+
+Note that class names are not fully qualfied. Eg., ``foo::bar`` is now prefered over ``::foo::bar``.
+
+YAML markup
+^^^^^^^^^^^
+
+- Indenting (2 spaces; lists are indented)
+- double space quotes are used for all strings until single space is required because of escape sequences
+- No space between key name and ``:``
+- Lists and maps/hashes/dicts/associative arrays use the indended multi-line form
+- Role names use ``_`` instead of ``-``
+- Avoid useless headers/comments as stale/excessive comments are often worse than no-comment. Eg., It is not nessicary to explain that ``role/foo.yaml`` is the ``foo`` role.
+- Boolean values are `true` and `false` (lowercase only)
+- ``site``, ``role``, and ``cluster`` names must be unique
+- Break comment lines at 80cols
+- No dangling whitespace
+
+Puppetfile
+^^^^^^^^^^
+
+- treated as ruby code and linted by ``rubocop``
+- use ``/`` instead of ``-`` in module names
+
+TODO
+----
+
+- TODO confirm with Tiago & Chile Team which hierarchies/profiles are unused (e.g. EFD)
+- Check if EFD, ATS or CCS definitions are being used. This will eventually remove ``datacenter`` hierarchy.
+- Remove ``type`` hierarchies, blocked as the moment by telegraf definitions.
+
+Comcam Servers Setup
+====================
+
+Setup
+-----
+
+As a Proof-of-Concept, a Foreman server has been set up in Tucson to manage puppet infrastructure for Comcam servers. `Foreman <https://www.theforeman.org>`_ is a service that allows to configure Puppet environments using a Web UI, and includes bare metal provisioning & automated configuration features, like:
+
+- Host inventory.
+- DHCP, DNS, TFTP and PXE boot services.
+- Customizable operating system templates.
+- Puppet master server.
+- Puppet node classifier.
+- Node auditing reports.
+- Rest API, and linux CLI.
+- IPMI integration.
+
+Foreman installation
+--------------------
+
+.. TODO JCH could you help me to explain this section? (it'd be great to have screenshots of Foreman, or configuration repo references)
+- explain what is included (DHCP, TFTP, PXE, Puppet Master, DNS, report processor), and if anything was installed manually before foreman
+- explain manual installations (DNS)
+- show the usage of foreman hammer
+- explain OS, groups, organizations,... setups in foreman UI
+- r10k manual setup
+- smee webhook integration to automate r10k
+- kickstart scripts customization
+
+Clients set up
+--------------
+
+.. TODO JCH could you help me to explain this section?
+- iDrac setup
+- PXE boot
+
+Misc frustrations
+-----------------
+
+- no DNS
+- no central auth
+
+TO DOs
+------
+
+- doc or puppetize foreman install/bootstrap
+- develop hammer (cli) or psql scripts to allow boot strapping a foreman install without requiring manual configuration
+- resolve ipmitool/lanplus not being able to communicate with idrac IPMIv2 implimentation
+- Dell UEFI firmware boots extremely slowly... see if this can be speed up by disabling boot device probing on PCIe slot which show not be booted from.
+- Find a replacement for the puppetlabs agent module as it is strangely inflexible
+- disable ipv6
+- investigate uefi boot order magically changing to put the perc control first; needs to be set to pxe (pref. by ipmi) for foreman to reprovision a node
+- the r10k/smee webhook proxying should be replaced with a more production appropriate system. There are examples of webhook -> aws api gateway -> lambda -> sns.
 
 .. .. rubric:: References
 
