@@ -463,10 +463,18 @@ Clients setup
 - iDrac setup
 - PXE boot
 
+r10k "gitops"
+-------------
+
+.. figure:: /_static/foreman-smee.png
+   :name: fig-foreman-smee
+   :alt: foreman smee webhook graph
+
+
 Misc frustrations
 -----------------
 
-- no DNS
+- DNS
 - no central auth
 
 TO DOs
