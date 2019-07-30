@@ -7,8 +7,8 @@
 Hiera / Roles & Profiles Refactoring
 ====================================
 
-New Hiera Hierarchy
--------------------
+New Hierarchy
+-------------
 
 We believe that there was general consensus during discussions at the start of the puppeton that the `current <https://github.com/LSST-IT/lsst-itconf/blob/ec3296fcd0d7ce91f13e9ea1993190719a66d699/hiera.yaml>`_ hierarchy was difficult to use and in need of refactoring.
 
@@ -63,6 +63,33 @@ As the result of some inputs & agreements:
 - Most of the current definitions seem to be role-specific, instead of node-specific.
 - Data lookups - by default - will search the hierarchy in the order defined and return the first value found. Thus, the order is always specified from most specific to least specific.
 - ``type`` was added to facilitate refactoring the existing hierarchy but the name feels awkward and should be revisited.
+
+Example of new directory structure (filtered down to a single site and a handfull of roles):
+
+.. code-block:: yaml
+
+  .
+  ├── cluster
+  │   └── comcam.yaml
+  ├── common.yaml
+  ├── role
+  │   ├── cc_camera.yaml
+  │   ├── cc_daq.yaml
+  │   ├── cc_diag.yaml
+  │   ├── grafana.yaml
+  │   ├── graylog.yaml
+  │   ├── influxdb.yaml
+  │   └── puppet_master.yaml
+  ├── site
+  │   ├── po
+  │   │   └── role
+  │   │       ├── graylog.yaml
+  │   │       ├── influxdb.yaml
+  │   │       └── puppet_master.yaml
+  │   └── po.yaml
+  └── type
+      ├── default.yaml
+      └── physical.yaml
 
 General usage guidelines
 ^^^^^^^^^^^^^^^^^^^^^^^^
