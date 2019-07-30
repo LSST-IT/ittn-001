@@ -318,6 +318,7 @@ The data type of every profile class parameter must be declared.  This functions
 
   class profile::foo(
     Variant[Hash[String, String], Undef] $bar = undef,
+    Stdlib::Absolutepath $baz = "/tmp/baz",
   ) {
 
 Make heavy usage of the forge
