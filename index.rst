@@ -521,6 +521,13 @@ Foreman installation
     --enable-foreman-proxy-plugin-remote-execution-ssh
 
 
+howto
+- ssh run
+- puppet master ca
+
+research
+- choria/salt/etc. for triggering agent runs at scale
+
 Client setup
 ------------
 
@@ -574,6 +581,7 @@ TODO
 - disable ipv6
 - investigate uefi boot order magically changing to put the perc control first; needs to be set to pxe (pref. by ipmi) for foreman to reprovision a node
 - the r10k/smee webhook proxying should be replaced with a more production appropriate system. There are examples of webhook -> aws api gateway -> lambda -> sns.
+- configure smartd/megacli/perccli to monitor lsi raid controller attached drives
 
 .. .. rubric:: References
 
