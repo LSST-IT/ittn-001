@@ -497,6 +497,37 @@ Foreman installation
 - smee webhook integration to automate r10k
 - kickstart scripts customization
 
+``foreman-installer`` flags
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: puppet
+
+  foreman-installer \
+    --enable-foreman-proxy \
+    --foreman-proxy-tftp=true \
+    --foreman-proxy-tftp-servername=10.0.103.101 \
+    --foreman-proxy-dhcp=true \
+    --foreman-proxy-dhcp-interface=em1 \
+    --foreman-proxy-dhcp-gateway=10.0.103.1 \
+    --foreman-proxy-dhcp-nameservers="10.0.103.101" \
+    --foreman-proxy-dhcp-range="10.0.103.101 10.0.103.105" \
+    --foreman-proxy-dns=true \
+    --foreman-proxy-dns-interface=em1 \
+    --foreman-proxy-dns-zone=test \
+    --foreman-proxy-dns-reverse=103.0.10.in-addr.arpa \
+    --foreman-proxy-dns-forwarders=140.252.32.21 \
+    --foreman-proxy-foreman-base-url=https://comcam-fp01.test \
+    --enable-foreman-plugin-remote-execution \
+    --enable-foreman-proxy-plugin-remote-execution-ssh
+
+
+howto
+- ssh run
+- puppet master ca
+
+research
+- choria/salt/etc. for triggering agent runs at scale
+
 Client setup
 ------------
 
@@ -550,6 +581,7 @@ TODO
 - disable ipv6
 - investigate uefi boot order magically changing to put the perc control first; needs to be set to pxe (pref. by ipmi) for foreman to reprovision a node
 - the r10k/smee webhook proxying should be replaced with a more production appropriate system. There are examples of webhook -> aws api gateway -> lambda -> sns.
+- configure smartd/megacli/perccli to monitor lsi raid controller attached drives
 
 .. .. rubric:: References
 
